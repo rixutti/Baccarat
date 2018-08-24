@@ -6,19 +6,23 @@ let suits = ["♠", "♥", "♦", "♣"];
 let values = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"];
 
 // DOM variables
-let welcomeMessage = document.getElementById('welcome-message');
-let ruleInfo = document.getElementById('rule-info');
-let payoutInfo = document.getElementById('payout-info');
-let newGameButton = document.getElementById('new-game-button');
-let playerButton = document.getElementById('player-button');
-let bankerButton = document.getElementById('banker-button');
-let tieButton = document.getElementById('tie-button');
+let welcomeMessage = document.getElementById('welcome-message'),
+    ruleInfo = document.getElementById('rule-info'),
+    payoutInfo = document.getElementById('payout-info'),
+    playerCardInfo = document.getElementById('playerCard-info'),
+    bankerCardInfo = document.getElementById('bankerCard-info'),
+    naturalInfo = document.getElementById('natural-info'),
+    newGameButton = document.getElementById('new-game-button'),
+    playerButton = document.getElementById('player-button'),
+    bankerButton = document.getElementById('banker-button'),
+    tieButton = document.getElementById('tie-button'),
+    takeCardButton = document.getElementById('takeCard-button');
 
 // Game variables
 let gameStart = false,
     gameOver = false,
     gameWon = false,
-    money = 100
+    money = 100,
     bankerCards = [],
     playerCards = [],
     bankerPoints = 0,
@@ -29,6 +33,7 @@ let gameStart = false,
 playerButton.style.display = 'none';
 bankerButton.style.display = 'none';
 tieButton.style.display = 'none';
+takeCardButton.style.display = 'none';
 showStatus();
 
 newGameButton.addEventListener('click', function() {
@@ -42,17 +47,6 @@ newGameButton.addEventListener('click', function() {
     moneyAmount(money);
     ruleInfo.innerHTML = "Punto Banco rules are used for this game.";
     payoutInfo.innerText = "Payouts: Player 2:1, Banker 2:1, Tie 8:1.\nWhich one you wanna bet on?";
-    deck = createDeck();
-    console.log(deck);
-    deck2 = deck3 = deck4 = deck5 = deck6 = deck7 = deck8 = deck.slice(0);
-    shoe = createShoe();
-    shuffle(shoe);
-    console.log(shoe);
-    bankerCards = [ takeCardFromShoe(), takeCardFromShoe()];
-    playerCards = [ takeCardFromShoe(), takeCardFromShoe()];
-    console.log(bankerCards);
-    console.log(playerCards);
-    showStatus();
 });
 
 playerButton.addEventListener('click', function() {
@@ -69,15 +63,6 @@ tieButton.addEventListener('click', function() {
     betTarget = "Tie";
     bet = placeBet();
 });
-
-function showStatus() {
-    if (!gameStart) {
-        welcomeMessage.innerHTML = "Welcome to Riku's Baccarat!";
-        ruleInfo.innerHTML = " ";
-        payoutInfo.innerHTML = " ";
-        return;
-    }
-}
 
 function createDeck() {
     let deck = [];
@@ -113,7 +98,7 @@ function placeBet() {
     Math.trunc(parseInt(bet));
     console.log(bet);
     if (bet == null || bet == "") {
-        dealerSays = "You must place a bet if you want to play at my table.";
+        dealerSays = "You must place a bet, if you wish to stay at my table.";
         ruleInfo.innerHTML = dealerSays;
         payoutInfo.innerHTML = "";
     }
@@ -122,7 +107,7 @@ function placeBet() {
         money = 0;
         moneyAmount(money);
         ruleInfo.innerHTML = dealerSays;
-        payoutInfo.innerText = "I take all your money for that behavior.\nGet your ass up and go fuck yourself.";
+        payoutInfo.innerText = "I took all your money for that behavior. Get lost!";
         playerButton.style.display = 'none';
         bankerButton.style.display = 'none';
         tieButton.style.display = 'none';
@@ -133,17 +118,21 @@ function placeBet() {
         payoutInfo.innerHTML = "";
     }
     else if (bet > money) {
-        dealerSays = "Not enough cash for making that bet."
+        dealerSays = "Not enough cash to make that bet."
         ruleInfo.innerHTML = dealerSays;
         payoutInfo.innerHTML = "";
     }
     else {
     dealerSays = "You bet " + bet + " EUR on " + betTarget + ".";
     money = money - bet;
-    console.log(money);
     moneyAmount(money);
     ruleInfo.innerHTML = dealerSays;
     payoutInfo.innerHTML = "";
+    playerButton.style.display = 'none';
+    bankerButton.style.display = 'none';
+    tieButton.style.display = 'none';
+    takeCardButton.style.display = 'inline';
+    baccaratGame();
     }
 }
 
@@ -158,6 +147,41 @@ function tellWhatCard(card) {
 
 function takeCardFromShoe() {
     return shoe.shift();
+}
+
+function baccaratGame() {
+    deck = createDeck();
+    console.log(deck);
+    deck2 = deck3 = deck4 = deck5 = deck6 = deck7 = deck8 = deck.slice(0);
+    shoe = createShoe();
+    shuffle(shoe);
+    playerCards = [ takeCardFromShoe(), takeCardFromShoe()];
+    bankerCards = [ takeCardFromShoe(), takeCardFromShoe()];
+    calculateValues();
+    checkIfOverTen();
+}
+
+takeCardButton.addEventListener('click', function() {
+    let showPlayerCards = "";
+    for (let i = 0; i < playerCards.length; i++) {
+      showPlayerCards += tellWhatCard(playerCards[i]) + " ";
+    }
+    let showBankerCards = "";
+    for (let i = 0; i < bankerCards.length; i++) {
+      showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+    }
+    playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
+    bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
+    checkNatural();
+});
+
+function showStatus() {
+    if (!gameStart) {
+        welcomeMessage.innerHTML = "Welcome to Riku's Baccarat!";
+        ruleInfo.innerHTML = " ";
+        payoutInfo.innerHTML = " ";
+        return;
+    }
 }
 
 function getCardNumericValue(card) {
@@ -184,3 +208,36 @@ function getCardNumericValue(card) {
         return 0;
     }
   }
+function calculateValues() {
+
+    for (let i = 0; i < playerCards.length; i++) {
+        playerPoints += getCardNumericValue(playerCards[i]);
+    }
+    for (let i = 0; i < bankerCards.length; i++) {
+        bankerPoints += getCardNumericValue(bankerCards[i]);
+    }
+}
+function checkIfOverTen() {
+    if (playerPoints > 9) {
+        playerpoints -= 10; // if the score is 10 or more, drop the first digit.
+    }
+    if (bankerPoints > 9) {
+        bankerPoints -= 10;
+    }
+}
+
+function checkNatural() {
+    if (playerPoints == 8 || playerPoints == 9) {
+        naturalInfo.innerHTML = "Player is dealt a natural."
+        playerNatural = true;
+        gameOver = true;
+    }
+    if (bankerPoints == 8 || bankerPoints == 9) {
+        naturalInfo.innerHTML = "Banker is dealt a natural."
+        bankerNatural = true;
+        gameOver = true;
+    }
+    if (playerNatural == true && bankerNatural == true) {
+        naturalInfo.innerHTML = "Both Player and Banker were dealt a natural."
+    }
+}
