@@ -12,17 +12,23 @@ let welcomeMessage = document.getElementById('welcome-message'),
     playerCardInfo = document.getElementById('playerCard-info'),
     bankerCardInfo = document.getElementById('bankerCard-info'),
     naturalInfo = document.getElementById('natural-info'),
+    winningHand = document.getElementById('winning-hand'),
+    winningInfo = document.getElementById('winning-info'),
     newGameButton = document.getElementById('new-game-button'),
     playerButton = document.getElementById('player-button'),
     bankerButton = document.getElementById('banker-button'),
     tieButton = document.getElementById('tie-button'),
     takeCardButton = document.getElementById('takeCard-button');
+    nextButton = document.getElementById('next-button');
 
 // Game variables
 let gameStart = false,
     gameOver = false,
-    gameWon = false,
+    playerNatural = false,
+    bankerNatural = false,
+    firstPress = true, // This is for Take Card -button to check later if it is already pressed
     money = 100,
+    bet = 0,
     bankerCards = [],
     playerCards = [],
     bankerPoints = 0,
@@ -34,19 +40,23 @@ playerButton.style.display = 'none';
 bankerButton.style.display = 'none';
 tieButton.style.display = 'none';
 takeCardButton.style.display = 'none';
+nextButton.style.display = 'none';
 showStatus();
 
 newGameButton.addEventListener('click', function() {
+    clearText();
     newGameButton.style.display = 'none';
     playerButton.style.display = 'inline';
     bankerButton.style.display = 'inline';
     tieButton.style.display = 'inline';
     gameStart = true;
     gameOver = false;
-    gameWon = false;
+    playerNatural = false,
+    bankerNatural = false,
     moneyAmount(money);
     ruleInfo.innerHTML = "Punto Banco rules are used for this game.";
     payoutInfo.innerText = "Payouts: Player 2:1, Banker 2:1, Tie 8:1.\nWhich one you wanna bet on?";
+    checkIfBroke(money);
 });
 
 playerButton.addEventListener('click', function() {
@@ -94,8 +104,8 @@ function shuffle(shoe) {
 
 function placeBet() {
 
-    let bet = prompt("Place your bet.\nTable limits: min 10 EUR, max 5000 EUR", "100");
-    Math.trunc(parseInt(bet));
+    bet = prompt("Place your bet.\n\nTable limits: min 10 EUR, max 5000 EUR", "100");
+    bet = Math.trunc(parseInt(bet));
     console.log(bet);
     if (bet == null || bet == "") {
         dealerSays = "You must place a bet, if you wish to stay at my table.";
@@ -103,7 +113,7 @@ function placeBet() {
         payoutInfo.innerHTML = "";
     }
     else if (isNaN(bet)) {
-        dealerSays = "You cannot play here with that attitude."
+        dealerSays = "You cannot play here with that attitude.";
         money = 0;
         moneyAmount(money);
         ruleInfo.innerHTML = dealerSays;
@@ -131,13 +141,13 @@ function placeBet() {
     playerButton.style.display = 'none';
     bankerButton.style.display = 'none';
     tieButton.style.display = 'none';
-    takeCardButton.style.display = 'inline';
     baccaratGame();
+    return bet;
     }
 }
 
 function moneyAmount(money) {
-    dealerSaysMoney = "You have " + money + " EUR."
+    dealerSaysMoney = "You have " + money + " EUR.";
     welcomeMessage.innerHTML = dealerSaysMoney;
 }
 
@@ -159,20 +169,32 @@ function baccaratGame() {
     bankerCards = [ takeCardFromShoe(), takeCardFromShoe()];
     calculateValues();
     checkIfOverTen();
+    takeCardButton.style.display = 'inline';
 }
 
 takeCardButton.addEventListener('click', function() {
-    let showPlayerCards = "";
-    for (let i = 0; i < playerCards.length; i++) {
-      showPlayerCards += tellWhatCard(playerCards[i]) + " ";
+    if (firstPress = true) {
+        let showPlayerCards = "";
+        for (let i = 0; i < playerCards.length; i++) {
+            showPlayerCards += tellWhatCard(playerCards[i]) + " ";
+        }
+        let showBankerCards = "";
+        for (let i = 0; i < bankerCards.length; i++) {
+        showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+        }
+        playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
+        bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
+        checkNatural();
+        firstPress = false;
     }
-    let showBankerCards = "";
-    for (let i = 0; i < bankerCards.length; i++) {
-      showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+    else if (firstPress = false) {
+        takeMoreCards();
     }
-    playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
-    bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
-    checkNatural();
+});
+
+nextButton.addEventListener('click', function() {
+    naturalInfo.innerHTML = "";
+    endGame();
 });
 
 function showStatus() {
@@ -219,7 +241,7 @@ function calculateValues() {
 }
 function checkIfOverTen() {
     if (playerPoints > 9) {
-        playerpoints -= 10; // if the score is 10 or more, drop the first digit.
+        playerPoints -= 10; // if the score is 10 or more, drop the first digit.
     }
     if (bankerPoints > 9) {
         bankerPoints -= 10;
@@ -228,16 +250,116 @@ function checkIfOverTen() {
 
 function checkNatural() {
     if (playerPoints == 8 || playerPoints == 9) {
-        naturalInfo.innerHTML = "Player is dealt a natural."
+        naturalInfo.innerHTML = "Player is dealt a natural.";
         playerNatural = true;
         gameOver = true;
+        takeCardButton.style.display = 'none';
+        nextButton.style.display = 'inline';
     }
     if (bankerPoints == 8 || bankerPoints == 9) {
-        naturalInfo.innerHTML = "Banker is dealt a natural."
+        naturalInfo.innerHTML = "Banker is dealt a natural.";
         bankerNatural = true;
         gameOver = true;
+        takeCardButton.style.display = 'none';
+        nextButton.style.display = 'inline';
     }
     if (playerNatural == true && bankerNatural == true) {
-        naturalInfo.innerHTML = "Both Player and Banker were dealt a natural."
+        naturalInfo.innerHTML = "Both Player and Banker were dealt a natural.";
+        takeCardButton.style.display = 'none';
+        nextButton.style.display = 'inline';
+    }
+}
+
+function takeMoreCards() {
+    if (playerPoints == 6 || playerPoints == 7) { // player stands with 6 or 7
+        playerStands = true;
+        naturalInfo.innerHTML = "Player stands.";
+        if (bankerPoints == 6 || bankerPoints == 7) { // if banker has 6 or 7, he stands.
+            bankerStands = true;
+            naturalInfo.innerHTML = "Player stands. Banker checks his cards and also stands."
+            gameOver = true;
+            endGame();
+        }
+        if (bankerPoints <= 5) { // banker takes a 3rd card if his hand value is 5 or under
+            bankerCards.push(takeCardFromShoe);
+            calculateValues();
+            checkIfOverTen();
+            showBankerCards = "";
+            for (let i = 0; i < bankerCards.length; i++) {
+                showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+            }
+            bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
+            takeCardButton.style.display = 'none';
+            nextButton.style.display = 'inline';
+            endGame();
+        }
+    }
+}
+
+function endGame() {
+    if (gameOver == true) {
+        if (playerPoints > bankerPoints) {
+            if (betTarget == "the Player hand") {
+                winningHand.innerHTML = "Winning hand: PLAYER";
+                winningInfo.innerHTML = "Congratulations, you win " + bet * 2 + " EUR!";
+                money += bet * 2;
+            }
+            else if (betTarget == "the Banker hand") {
+                winningHand.innerHTML = "Winning hand: PLAYER";
+                winningInfo.innerHTML = "You lose " + bet + " EUR.\nBetter luck next time!";
+            }
+            else if (betTarget == "Tie") {
+                winningHand.innerHTML = "Winning hand: PLAYER";
+                winningInfo.innerHTML = "You lose " + bet + " EUR.\nBetter luck next time!";
+            }
+        }
+        if (playerPoints < bankerPoints) {
+            if (betTarget == "the Player hand") {
+                winningHand.innerHTML = "Winning hand: BANKER";
+                winningInfo.innerText = "You lose " + bet + " EUR.\nBetter luck next time!";
+            }
+            else if (betTarget == "the Banker hand") {
+                winningHand.innerHTML = "Winning hand: BANKER";
+                winningInfo.innerHTML = "Congratulations, you win " + bet * 2 + " EUR!";
+                money += bet * 2;
+            }
+            else if (betTarget == "Tie") {
+                winningHand.innerHTML = "Winning hand: BANKER";
+                winningInfo.innerText = "You lose " + bet + " EUR.\nBetter luck next time!";
+            }
+        }
+        if (playerPoints == bankerPoints) {
+            if (betTarget == "the Player hand") {
+                winningHand.innerText = "It\'s a Tie!\nYou get your money back.";
+            }
+            else if (betTarget == "the Banker hand") {
+                winningHand.innerText = "It\'s a Tie!\nYou get your money back.";
+            }
+            else if (betTarget == "Tie") {
+                winningHand.innerText = "It\'s a Tie!\nYou win " + bet * 8 + " EUR.";
+                money += bet * 8;
+            }
+        }
+    }
+    ruleInfo.innerHTML = "";
+    moneyAmount(money);
+    nextButton.style.display = 'none';
+    newGameButton.style.display = 'inline';
+}
+
+function clearText() {
+    playerCardInfo.innerHTML = "";
+    bankerCardInfo.innerHTML = "";
+    winningHand.innerHTML = "";
+    winningInfo.innerHTML = "";
+}
+
+function checkIfBroke(money) {
+    if (money == 0) {
+        ruleInfo.innerText = "Where is your money, sir?\nYou cannot play here if you\'re broke.";
+        payoutInfo.innerText = "Please leave the casino immediately!";
+        playerButton.style.display = 'none';
+        bankerButton.style.display = 'none';
+        tieButton.style.display = 'none';
     }
 }
