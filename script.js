@@ -20,13 +20,13 @@ let welcomeMessage = document.getElementById('welcome-message'),
     tieButton = document.getElementById('tie-button'),
     takeCardButton = document.getElementById('takeCard-button');
     nextButton = document.getElementById('next-button');
+    showCardButton = document.getElementById('showCard-button');
 
 // Game variables
 let gameStart = false,
     gameOver = false,
     playerNatural = false,
     bankerNatural = false,
-    firstPress = true, // This is for Take Card -button to check later if it is already pressed
     money = 100,
     bet = 0,
     bankerCards = [],
@@ -36,23 +36,28 @@ let gameStart = false,
     deck = [], deck2=[], deck3=[], deck4=[], deck5=[], deck6=[], deck7=[], deck8=[]; // one deck of cards
     shoe = []; // consists of 8 decks shuffled together
 
+// Let's create the decks and shoe here, at the very beginning
+deck = createDeck();
+deck2 = deck3 = deck4 = deck5 = deck6 = deck7 = deck8 = deck.slice(0);
+shoe = createShoe();
+shuffle(shoe);
+
 playerButton.style.display = 'none';
 bankerButton.style.display = 'none';
 tieButton.style.display = 'none';
 takeCardButton.style.display = 'none';
 nextButton.style.display = 'none';
-showStatus();
+showCardButton.style.display = 'none';
+welcomeToBaccarat();
 
 newGameButton.addEventListener('click', function() {
     clearText();
+    resetGameVariables();
     newGameButton.style.display = 'none';
     playerButton.style.display = 'inline';
     bankerButton.style.display = 'inline';
     tieButton.style.display = 'inline';
     gameStart = true;
-    gameOver = false;
-    playerNatural = false,
-    bankerNatural = false,
     moneyAmount(money);
     ruleInfo.innerHTML = "Punto Banco rules are used for this game.";
     payoutInfo.innerText = "Payouts: Player 2:1, Banker 2:1, Tie 8:1.\nWhich one you wanna bet on?";
@@ -160,11 +165,6 @@ function takeCardFromShoe() {
 }
 
 function baccaratGame() {
-    deck = createDeck();
-    console.log(deck);
-    deck2 = deck3 = deck4 = deck5 = deck6 = deck7 = deck8 = deck.slice(0);
-    shoe = createShoe();
-    shuffle(shoe);
     playerCards = [ takeCardFromShoe(), takeCardFromShoe()];
     bankerCards = [ takeCardFromShoe(), takeCardFromShoe()];
     calculateValues();
@@ -173,7 +173,7 @@ function baccaratGame() {
 }
 
 takeCardButton.addEventListener('click', function() {
-    if (firstPress = true) {
+    if (secondPress == false) {
         let showPlayerCards = "";
         for (let i = 0; i < playerCards.length; i++) {
             showPlayerCards += tellWhatCard(playerCards[i]) + " ";
@@ -184,12 +184,15 @@ takeCardButton.addEventListener('click', function() {
         }
         playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
         bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
-        checkNatural();
-        firstPress = false;
+        checkNatural(); // Natural rule overrides all other rules
+        if (playerNatural == false && bankerNatural == false) { // Check if Player stands. Only if natural rule not in effect.
+            checkPlayerStand();
+        }
     }
-    else if (firstPress = false) {
+    else if (secondPress == true) {
         takeMoreCards();
     }
+    secondPress = true;
 });
 
 nextButton.addEventListener('click', function() {
@@ -197,7 +200,7 @@ nextButton.addEventListener('click', function() {
     endGame();
 });
 
-function showStatus() {
+function welcomeToBaccarat() {
     if (!gameStart) {
         welcomeMessage.innerHTML = "Welcome to Riku's Baccarat!";
         ruleInfo.innerHTML = " ";
@@ -231,13 +234,15 @@ function getCardNumericValue(card) {
     }
   }
 function calculateValues() {
-
+    playerPoints = 0;
+    bankerPoints = 0;
     for (let i = 0; i < playerCards.length; i++) {
         playerPoints += getCardNumericValue(playerCards[i]);
     }
     for (let i = 0; i < bankerCards.length; i++) {
         bankerPoints += getCardNumericValue(bankerCards[i]);
     }
+    return;
 }
 function checkIfOverTen() {
     if (playerPoints > 9) {
@@ -246,6 +251,7 @@ function checkIfOverTen() {
     if (bankerPoints > 9) {
         bankerPoints -= 10;
     }
+    return;
 }
 
 function checkNatural() {
@@ -268,32 +274,169 @@ function checkNatural() {
         takeCardButton.style.display = 'none';
         nextButton.style.display = 'inline';
     }
+    return;
 }
 
-function takeMoreCards() {
+function checkPlayerStand() {
     if (playerPoints == 6 || playerPoints == 7) { // player stands with 6 or 7
         playerStands = true;
         naturalInfo.innerHTML = "Player stands.";
-        if (bankerPoints == 6 || bankerPoints == 7) { // if banker has 6 or 7, he stands.
-            bankerStands = true;
-            naturalInfo.innerHTML = "Player stands. Banker checks his cards and also stands."
-            gameOver = true;
-            endGame();
-        }
-        if (bankerPoints <= 5) { // banker takes a 3rd card if his hand value is 5 or under
-            bankerCards.push(takeCardFromShoe);
-            calculateValues();
-            checkIfOverTen();
-            showBankerCards = "";
-            for (let i = 0; i < bankerCards.length; i++) {
-                showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+    }
+    else {
+        playerStands = false;
+    }
+}
+
+function bankerTakesThirdCard() {
+    bankerCards.push(takeCardFromShoe());
+    calculateValues();
+    checkIfOverTen();
+    showBankerCards = "";
+    for (let i = 0; i < bankerCards.length; i++) {
+        showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+    }
+    bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
+    showCardButton.style.display = 'none';
+    gameOver = true;
+    return;
+}
+
+function playerTakesThirdCard() {
+    playerCards.push(takeCardFromShoe());
+    calculateValues();
+    checkIfOverTen();
+    playerThirdCardValue = playerCards[2].value;
+    showPlayerCards = "";
+    for (let i = 0; i < playerCards.length; i++) {
+        showPlayerCards += tellWhatCard(playerCards[i]) + " ";
+    }
+    playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
+    showCardButton.style.display = 'none';
+    return playerThirdCardValue;
+}
+
+showCardButton.addEventListener('click', function() {
+    if (bankerThirdCard == true) {
+        bankerTakesThirdCard();
+        gameOver = true;
+        takeCardButton.style.display = 'none';
+        nextButton.style.display = 'inline';
+    }
+    if (playerThirdCard == true) {
+        playerTakesThirdCard();
+        takeCardButton.style.display = 'inline';
+        nextButton.style.display = 'none';
+    }
+    naturalInfo.innerHTML = "";
+    return;
+});
+
+function takeMoreCards() {
+    if (playerThirdCard == false) {
+        if (playerStands == true) { // Player stands with 6 or 7
+            if (bankerPoints == 6 || bankerPoints == 7) { // if banker has 6 or 7, he stands.
+                naturalInfo.innerHTML = "Player stands. Banker also decides to stand."
+                gameOver = true;
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
             }
-            bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
-            takeCardButton.style.display = 'none';
-            nextButton.style.display = 'inline';
-            endGame();
+            else if (bankerPoints <= 5) { // Banker takes a 3rd card if his hand value is 5 or under.
+                naturalInfo.innerHTML = "Banker takes a third card."
+                bankerThirdCard = true;
+                bankerTakesThirdCard();
+                return;
+            }
+        }
+        else if (playerStands == false) {
+            if (playerPoints <= 5) { // Player automatically hits if his hand value is 5 or under.
+                naturalInfo.innerHTML = "Player is given a third card. Click OK to continue."
+                playerThirdCard = true;
+                takeCardButton.style.display = 'none';
+                showCardButton.style.display = 'inline';
+                return;
+            }
         }
     }
+    if (playerThirdCard == true) {
+        if (bankerPoints == 0 || bankerPoints == 1 || bankerPoints == 2) {
+            naturalInfo.innerHTML = "Banker takes a third card."
+            bankerThirdCard = true;
+            bankerTakesThirdCard();
+            takeCardButton.style.display = 'none';
+            nextButton.style.display = 'inline';
+            return;
+        }
+        else if (bankerPoints == 3) {
+            if (playerThirdCardValue != 8) { // Banker takes a 3rd card if Player's third card is 1-2-3-4-5-6-7 (not 8) 
+                naturalInfo.innerHTML = "Banker takes a third card."
+                bankerThirdCard = true;
+                bankerTakesThirdCard();
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+            else { // If Player 3rd card value is 8, Banker stands.
+                naturalInfo.innerHTML = "Banker stands."
+                gameOver = true;
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+        }
+        else if (bankerPoints == 4) {
+            if (playerThirdCardValue >= 2 && playerThirdCardValue <= 7) { // Player's 3rd card is 2-3-4-5-6-7
+                naturalInfo.innerHTML = "Banker takes a third card."
+                bankerThirdCard = true;
+                bankerTakesThirdCard();
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+            else {
+                naturalInfo.innerHTML = "Banker stands."
+                gameOver = true;
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+        }
+        else if (bankerPoints == 5) {
+            if (playerThirdCardValue >=4 && playerThirdCardValue <= 7) { // Player 3rd card value 4-5-6-7
+                naturalInfo.innerHTML = "Banker takes a third card."
+                bankerThirdCard = true;
+                bankerTakesThirdCard();
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+            else {
+                naturalInfo.innerHTML = "Banker stands."
+                gameOver = true;
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+        }
+        else if (bankerPoints == 6) {
+            if (playerThirdCardValue == 6 || playerThirdCardValue == 7) {
+                naturalInfo.innerHTML = "Banker takes a third card."
+                bankerThirdCard = true;
+                bankerTakesThirdCard();
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+            else {
+                naturalInfo.innerHTML = "Banker stands."
+                gameOver = true;
+                takeCardButton.style.display = 'none';
+                nextButton.style.display = 'inline';
+                return;
+            }
+        }
+    }
+    return;
 }
 
 function endGame() {
@@ -331,20 +474,22 @@ function endGame() {
         if (playerPoints == bankerPoints) {
             if (betTarget == "the Player hand") {
                 winningHand.innerText = "It\'s a Tie!\nYou get your money back.";
+                money += bet;
             }
             else if (betTarget == "the Banker hand") {
                 winningHand.innerText = "It\'s a Tie!\nYou get your money back.";
+                money += bet;
             }
             else if (betTarget == "Tie") {
                 winningHand.innerText = "It\'s a Tie!\nYou win " + bet * 8 + " EUR.";
                 money += bet * 8;
             }
         }
+        ruleInfo.innerHTML = "\xa0";
+        moneyAmount(money);
+        nextButton.style.display = 'none';
+        newGameButton.style.display = 'inline';
     }
-    ruleInfo.innerHTML = "";
-    moneyAmount(money);
-    nextButton.style.display = 'none';
-    newGameButton.style.display = 'inline';
 }
 
 function clearText() {
@@ -352,6 +497,21 @@ function clearText() {
     bankerCardInfo.innerHTML = "";
     winningHand.innerHTML = "";
     winningInfo.innerHTML = "";
+}
+
+function resetGameVariables() {
+    bankerPoints = 0;
+    playerPoints = 0;
+    gameOver = false,
+    playerNatural = false,
+    bankerNatural = false,
+    playerStands = false,
+    secondPress = false, // This is for Take Card -button to check later if it is already pressed
+    playerThirdCard = false,
+    bankerThirdCard = false,
+    bet = 0,
+    bankerCards = [],
+    playerCards = [];
 }
 
 function checkIfBroke(money) {
