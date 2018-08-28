@@ -174,25 +174,27 @@ function baccaratGame() {
 
 takeCardButton.addEventListener('click', function() {
     if (secondPress == false) {
+        secondPress = true;
         let showPlayerCards = "";
         for (let i = 0; i < playerCards.length; i++) {
             showPlayerCards += tellWhatCard(playerCards[i]) + " ";
         }
         let showBankerCards = "";
         for (let i = 0; i < bankerCards.length; i++) {
-        showBankerCards += tellWhatCard(bankerCards[i]) + " ";
+            showBankerCards += tellWhatCard(bankerCards[i]) + " ";
         }
         playerCardInfo.innerText = "\nPlayer hand: " + showPlayerCards + "\nPoints: " + playerPoints;
         bankerCardInfo.innerText = "Banker hand: " + showBankerCards + "\nPoints: " + bankerPoints;
         checkNatural(); // Natural rule overrides all other rules
         if (playerNatural == false && bankerNatural == false) { // Check if Player stands. Only if natural rule not in effect.
             checkPlayerStand();
+            return;
         }
     }
     else if (secondPress == true) {
         takeMoreCards();
+        return;
     }
-    secondPress = true;
 });
 
 nextButton.addEventListener('click', function() {
@@ -242,7 +244,7 @@ function calculateValues() {
     for (let i = 0; i < bankerCards.length; i++) {
         bankerPoints += getCardNumericValue(bankerCards[i]);
     }
-    return;
+    return playerPoints, bankerPoints;
 }
 function checkIfOverTen() {
     if (playerPoints > 9) {
@@ -285,6 +287,7 @@ function checkPlayerStand() {
     else {
         playerStands = false;
     }
+    return;
 }
 
 function bankerTakesThirdCard() {
@@ -370,7 +373,7 @@ function takeMoreCards() {
             return;
         }
         else if (bankerPoints == 3) {
-            if (playerThirdCardValue != 8) { // Banker takes a 3rd card if Player's third card is 1-2-3-4-5-6-7 (not 8) 
+            if (playerThirdCardValue != 8) { // Banker takes a 3rd card if Player's third card is 0-1-2-3-4-5-6-7-9 (not 8) 
                 naturalInfo.innerHTML = "Banker takes a third card."
                 bankerThirdCard = true;
                 bankerTakesThirdCard();
@@ -378,7 +381,7 @@ function takeMoreCards() {
                 nextButton.style.display = 'inline';
                 return;
             }
-            else { // If Player 3rd card value is 8, Banker stands.
+            else if (playerThirdCardValue == 8) { // If Player 3rd card value is 8, Banker stands.
                 naturalInfo.innerHTML = "Banker stands."
                 gameOver = true;
                 takeCardButton.style.display = 'none';
@@ -436,6 +439,13 @@ function takeMoreCards() {
                 nextButton.style.display = 'inline';
                 return;
             }
+        }
+        else if (bankerPoints == 7) {
+            naturalInfo.innerHTML = "Banker stands."
+            gameOver = true;
+            takeCardButton.style.display = 'none';
+            nextButton.style.display = 'inline';
+            return;
         }
     }
     return;
