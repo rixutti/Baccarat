@@ -348,6 +348,8 @@ function takeMoreCards() {
                 naturalInfo.innerHTML = "Banker takes a third card."
                 bankerThirdCard = true;
                 bankerTakesThirdCard();
+                calculateValues();
+                checkIfOverTen();
                 takeCardButton.style.display = 'none';
                 nextButton.style.display = 'inline';
                 return;
